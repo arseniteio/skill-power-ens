@@ -33,6 +33,8 @@ If cloning fails, stop: the person must give you read access to the arseniteio r
 4. After every section, run its check. If the result is not the expected one, read the troubleshooting section, fix only what it describes and repeat. If it still fails, stop and report the command, its output and what you tried.
 5. Do not change anything the guides do not change: the Wazuh compose file, the `ossec.conf` of the agents, other rules, groups or users.
 6. Ask before anything that cannot be undone or that interrupts service: deleting indices, users or groups, and restarting a manager or dashboard in production outside the window the person gave.
+7. Never patch the scripts of the repositories. If one does not fit the deployment, stop and report what you would need to change and why.
+8. Check the Wazuh and dashboard versions before anything else. If the Wazuh version is outside the range the guide supports, stop and ask: the person decides whether to go on, and you note it in the report.
 
 ## Before you install
 
@@ -59,9 +61,35 @@ Follow the guide section by section. These are the points where agents usually g
 - Agents: keep the order of the section. The Wazuh agent must have the facts localfile and be restarted before the first `oscompliance-agent -full`, or Wazuh skips the first facts.
 - Docker: the guide adds `docker-compose.override.yml` next to the compose file. If one already exists, merge it by hand and tell the person.
 
+## Pitfalls seen in real installations
+
+- Without root, run the scripts with `sudo`. sudo drops the environment, so the password variables do not reach the script: pass them with `sudo --preserve-env=API_ADMIN_PASSWORD,OSC_INDEXER_PASSWORD,OSC_WAZUH_API_PASSWORD` and set `INDEXER_URL`, `API_URL` and `CERTS` the same way when they are not the defaults.
+- The configuration document is `active` in `wazuh-ens-configuration`. Older notes call it `ACTIVE_CONFIGURATION`, which is its type, not its id.
+- Do not build the initial ENS configuration by hand through the plugin API. It needs the full catalog of controls and any mistake is saved as policy. Use the first save in the dashboard.
+- Behind a load balancer or an IP allowlist, the public dashboard URL can answer 403 to the server itself. Reach the dashboard from its own host or from an allowed address, never by opening the allowlist.
+- Before editing `ossec.conf` on a manager, keep a copy next to it with the date in the name, and say where in the report.
+- To remove the plugin, use `opensearch-dashboards-plugin remove powerEns` as the guide says. Deleting its folder skips the cleanup the dashboard does itself.
+- If Go or Docker are missing on the build machine, ask before installing them. Use the Go version that `go.mod` asks for or a later one.
+- A compliance figure of a few percent right after the installation is normal: most controls are not evaluable until their parameters are declared.
+
+## Deployments the guides do not cover
+
+The guides cover everything on one server and the official single-node Docker compose file. In a distributed deployment, with a manager cluster, the indexer apart or several dashboards, tell the person that it is outside the guides and ask before going on. If they agree, keep to the guide and adapt only this:
+
+- Rules: install them on every manager node, master and workers, and run `wazuh-analysisd -t` on each one. Restart the nodes one at a time.
+- Group and agents: create the `ens` group and add agents on the master. The cluster copies the group configuration to the workers.
+- Engine: run it on a host that reaches the indexer on 9200 and the master's API on 55000, usually the indexer host. Point `engine-users.sh` there with `INDEXER_URL` and `API_URL`, and in the service set `-indexer`, `-wazuh-api` and `-ca`. Copy the API certificate, `/var/ossec/api/configuration/ssl/server.crt` on the master, to that host for `-wazuh-api-ca`, and keep `-wazuh-api-server-name` as the name in that certificate, `localhost` by default.
+- Plugin: install the same zip on every dashboard, one at a time, so the load balancer always has one serving. Check each with `systemctl is-active wazuh-dashboard`.
+- Access: run `create-admin-role.sh` on the indexer host, with `OS_URL` set to its address.
+- Auditing the managers: every manager node is a machine like any other. Follow section 8 of the package guide on each one.
+
+Write down every change from the guide in the report, so the person can tell what is standard and what is not.
+
 ## Verify
 
 Run the verification section of the guide. The installation is complete when every audited machine has 119001 alerts, there is one 119002 alert per machine and run, the last engine pass shows `verdicts` above 0 and no `error`, and Power ENS shows a status with its reason for every evidence of a machine. Partial results caused by parameters that are not declared yet are expected; not evaluable by collection is a fault to fix.
+
+Without a browser, the plugin API confirms the dashboard side: `GET /api/powerEns/evaluation?include=summary` on the dashboard, with a dashboard user and the header `osd-xsrf: true`, must answer 200 with `controlSummary` and `agentSummary`.
 
 ## Report
 
