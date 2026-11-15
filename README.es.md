@@ -1,42 +1,52 @@
-# skill-power-ens
+# Skills de Power ENS
 
-Skill para agentes que instala OSCompliance ENS y Power ENS en Wazuh 4.14.7 a 4.14.9, audita máquinas Linux frente al ENS y las lleva al cumplimiento solo mediante configuración. Las instrucciones están en [SKILL.md](SKILL.md), en inglés. La skill sigue la documentación de [oscompliance-ens](https://github.com/arseniteio/oscompliance-ens) y [power-ens](https://github.com/arseniteio/power-ens).
+Skills para agentes que despliegan [OSCompliance ENS](https://github.com/arseniteio/oscompliance-ens) y [Power ENS](https://github.com/arseniteio/power-ens) sobre Wazuh y llevan las máquinas Linux al cumplimiento del ENS solo mediante configuración. Funcionan con Claude Code y OpenCode.
 
-El agente instala con el `install.sh` de la release, o con el paquete verificado cuando no se permite `curl | bash`. Solo cambia la configuración de Power ENS, las exclusiones por control con motivo y los ficheros de configuración del agente y del grupo que nombra la documentación. Nunca modifica scripts ni sistemas sin permiso, y registra el motivo de cada cambio.
+## Cómo funciona
 
-## Claude Code
+Pide a tu agente que despliegue Power ENS. Primero pregunta lo que necesita: la tarea, los hosts de Wazuh y cómo llegar a ellos, las máquinas que se auditan, la categoría ENS y la ventana de reinicio. Después detecta la topología y las versiones de Wazuh en cada host, presenta un plan y espera tu confirmación. Instala desde la release publicada, comprueba cada paso y termina con un informe.
 
-Clona el repositorio en una carpeta llamada `power-ens` dentro del directorio de skills. Para todos los proyectos del usuario:
+Después pídele que suba el cumplimiento. Lee los veredictos, separa los fallos reales del sistema de la configuración que falta o es incorrecta, y propone valores de parámetros o exclusiones con motivo. Solo aplica lo que confirmas y registra el porqué de cada cambio. Nunca modifica scripts ni sistemas sin tu permiso, y nunca cambia un valor solo para poner un veredicto en verde.
 
-```bash
-git clone https://github.com/arseniteio/skill-power-ens.git ~/.claude/skills/power-ens
+Las contraseñas se quedan en tu shell. Expórtalas antes de empezar; el agente nunca las pide en la conversación.
+
+## Instalación
+
+### Claude Code
+
+```
+/plugin install power-ens --marketplace arseniteio/skill-power-ens
 ```
 
-Para un solo proyecto, desde su raíz:
+En versiones de Claude Code anteriores a la 2.1.275, añade antes el marketplace:
 
-```bash
-git clone https://github.com/arseniteio/skill-power-ens.git .claude/skills/power-ens
+```
+/plugin marketplace add arseniteio/skill-power-ens
+/plugin install power-ens@arseniteio
 ```
 
-Abre una sesión nueva. Claude Code carga la skill cuando una petición encaja con su descripción. Para cargarla de forma explícita, escribe `/power-ens`. Actualízala con `git -C ~/.claude/skills/power-ens pull`.
+Actualiza con `/plugin marketplace update arseniteio`.
 
-## OpenCode
+### OpenCode
 
-OpenCode lee los directorios de Claude Code anteriores, así que un solo clon sirve para las dos herramientas. Para tenerla en los directorios de OpenCode, usa la ruta global o la del proyecto:
+Clona el repositorio en el directorio de skills de OpenCode. OpenCode encuentra las dos skills dentro.
 
 ```bash
 git clone https://github.com/arseniteio/skill-power-ens.git ~/.config/opencode/skills/power-ens
 ```
 
-```bash
-git clone https://github.com/arseniteio/skill-power-ens.git .opencode/skills/power-ens
-```
+Para un solo proyecto, clónalo en `.opencode/skills/power-ens` en la raíz del proyecto. Actualiza con `git -C ~/.config/opencode/skills/power-ens pull`. Si `opencode.json` restringe las skills con el permiso `skill`, permite `power-ens-*`.
 
-El modelo carga la skill con su herramienta `skill` cuando una petición encaja con la descripción. Para cargarla de forma explícita, escribe `@power-ens` en el prompt. Si `opencode.json` restringe las skills con el permiso `skill`, permite el recurso `power-ens`.
+### Comprobación
 
-## Uso
+Abre una sesión nueva y pregunta: «¿Qué skills de Power ENS tienes?». El agente lista power-ens-deploy y power-ens-compliance.
 
-Da al agente una shell de root o sudo en el servidor de Wazuh y en las máquinas que se auditan, y pídele que despliegue Power ENS. Primero pregunta el tipo de despliegue, las máquinas, la categoría ENS y la ventana de reinicio. Exporta las tres contraseñas de la guía de instalación en la shell antes de empezar; el agente nunca las pide en la conversación.
+## Skills
+
+- power-ens-deploy instala, actualiza o desinstala OSCompliance ENS y Power ENS en Wazuh 4.14.7 a 4.14.9, todo en uno, en Docker o distribuido, y añade máquinas a la auditoría.
+- power-ens-compliance lee los veredictos y declara parámetros de control y exclusiones por control con motivo.
+
+Las skills se cargan solas cuando una petición encaja. Para cargar una de forma explícita, usa `/power-ens:power-ens-deploy` en Claude Code o `@power-ens-deploy` en OpenCode.
 
 ## Licencia
 
