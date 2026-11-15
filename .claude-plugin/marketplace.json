@@ -1,0 +1,15 @@
+{
+  "name": "arseniteio",
+  "description": "Agent skills for OSCompliance and Power ENS.",
+  "owner": {
+    "name": "arseniteio"
+  },
+  "plugins": [
+    {
+      "name": "power-ens",
+      "description": "Deploy OSCompliance ENS and Power ENS on Wazuh and bring Linux machines to ENS compliance through configuration only.",
+      "version": "1.0.0",
+      "source": "./"
+    }
+  ]
+}
