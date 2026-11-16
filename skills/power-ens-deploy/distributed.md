@@ -1,35 +1,57 @@
-# Distributed deployments
+# Wazuh topology
 
-The guides cover all-in-one and single-node Docker. In any other layout, follow the sections of `oscompliance-ens/docs/en/install.md` on the host each one belongs to. Tell the operator that the layout is outside the guides before you start, and record every adaptation.
+`install.sh server` decides what to install from what it finds on the host. Find the same facts yourself before the plan, so that the plan shows each host's role and the operator can correct it.
 
-`install.sh server` refuses a host without the dashboard. Use the release package on each host instead: download the tarball of its architecture and `SHA256SUMS`, check them with `sha256sum -c --ignore-missing SHA256SUMS`, extract it and run the commands from that folder. On dashboard hosts, also download the plugin zip, `deploy-plugin.sh` and `create-admin-role.sh` of the same release, as in section 1.
+## Find each host's role
 
-## Engine host
+Run on each Wazuh host:
 
-Choose one host that reaches the indexer on 9200 and the master's API on 55000, usually an indexer node. It needs the indexer admin certificates for `engine-users.sh`.
+```bash
+test -x /var/ossec/bin/wazuh-analysisd && echo manager
+test -d /usr/share/wazuh-dashboard && echo dashboard
+test -d /usr/share/wazuh-indexer && echo indexer
+sudo /var/ossec/bin/wazuh-control info
+grep -m1 '"version"' /usr/share/wazuh-dashboard/package.json
+```
+
+A host can have several roles. On a manager, read the `<cluster>` section of `/var/ossec/etc/ossec.conf`:
+
+```bash
+sudo sed -n '/<cluster>/,/<\/cluster>/p' /var/ossec/etc/ossec.conf
+sudo /var/ossec/bin/cluster_control -l
+```
+
+The manager is a worker only when `<disabled>` is `no` and `<node_type>` is `worker`. Any other manager is the master or a single node. `cluster_control -l` lists the nodes with their type, or fails when the cluster is disabled. A deployment has one master; if you find none or two, stop and ask.
+
+## What the installer does on each role
+
+| Role | Installs | Restarts |
+| --- | --- | --- |
+| Master manager or single node | Rules 119000 to 119004, the `ens` group, the audit of the manager itself, the engine and its users | `wazuh-manager` |
+| Worker manager | Waits for the rules the cluster syncs from the master, then loads them | `wazuh-manager` |
+| Dashboard | The Power ENS plugin for its OpenSearch Dashboards version | `wazuh-dashboard` |
+| Indexer only | Nothing. Do not run the installer there | None |
+
+A host with several roles gets the parts of each, in one run. The engine runs only on the master: one engine per deployment.
+
+On the master, the installer reads the indexer URLs from `/etc/filebeat/filebeat.yml` and the indexer CA from `/etc/filebeat/certs/root-ca.pem` or `/etc/wazuh-indexer/certs/root-ca.pem`. The master must reach every indexer on 9200. When the master has no indexer admin certificate, the installer asks for the indexer `admin` password.
+
+Worker managers are not audited by detection. Only the master audits itself.
 
 ## Order
 
-1. Rules, section 2, on every manager node, master and workers. Run `wazuh-analysisd -t` on each. Restart one node at a time, and wait until `cluster_control -l` lists it again before the next.
-2. Group, section 2, on the master only: create `ens` and add the machines. The cluster copies the group configuration to the workers.
-3. Engine users, section 3, on the engine host, with the indexer and the master API:
+1. The master. Nothing else works until its run ends.
+2. Each worker, one at a time. Wait until `cluster_control -l` on the master lists it again before the next.
+3. Each dashboard, one at a time, so that a load balancer always has one serving.
+4. The audited machines, with `install.sh agent --group ens`.
 
-   ```bash
-   sudo --preserve-env=API_ADMIN_PASSWORD,OSC_INDEXER_PASSWORD,OSC_WAZUH_API_PASSWORD \
-     INDEXER_URL=https://<indexer>:9200 API_URL=https://<master>:55000 \
-     bash wazuh/engine-users.sh create
-   ```
+Upgrades follow the same order. Uninstall goes the other way: audited machines, dashboards and workers, then the master.
 
-   `CERTS` defaults to `/etc/wazuh-indexer/certs`; set it if the admin certificates are elsewhere.
-4. Plugin, section 4, on every dashboard, one at a time, so the load balancer always has one serving. Check each with `systemctl is-active wazuh-dashboard`.
-5. Configuration users: run `create-admin-role.sh --map <user>` on the engine host, with `OS_URL=https://<indexer>:9200`.
-6. First save in the dashboard, as in section 5.
-7. Engine, section 6, on the engine host. Copy the master's `/var/ossec/api/configuration/ssl/server.crt` to the engine host. Before you enable the service, edit `ExecStart` in `/etc/systemd/system/oscompliance-engine.service`: `-indexer` to the indexer URL, `-ca` to the indexer root CA on that host, `-wazuh-api` to the master API URL and `-wazuh-api-ca` to the copied certificate. Keep `-wazuh-api-server-name` as the name in that certificate, `localhost` by default.
-8. Managers, section 8, on every manager node the operator wants audited. Each one is a machine of its own.
-9. Audited machines with `install.sh agent`, as in the skill.
+## Checks per host
 
-## Checks
-
-- `journalctl -u oscompliance-engine` on the engine host shows `group configuration` with `applied` true and a `pass` with no `error`.
-- `/var/ossec/etc/shared/ens/agent.conf` on the master and on each worker holds the `oscompliance begin` block.
-- Each dashboard opens Power ENS.
+| Host | Check |
+| --- | --- |
+| Master | The installer ends with `Done on this node`. `systemctl is-active oscompliance-engine` is `active`. `journalctl -u oscompliance-engine` shows a `pass` with `verdicts` and no `error` |
+| Worker | The installer prints `rules loaded on this worker`. `/var/ossec/etc/rules/oscompliance_facts_rules.xml` exists. `cluster_control -l` on the master lists the worker |
+| Dashboard | `systemctl is-active wazuh-dashboard` is `active`. The dashboard opens Power ENS |
+| Audited machine | `agent_groups -l -g ens` on the master lists it within 15 minutes. It has `rule.id:119001` alerts |
