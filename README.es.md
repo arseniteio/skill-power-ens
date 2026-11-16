@@ -1,6 +1,6 @@
 # Skills de OSCompliance ENS y Power ENS
 
-Skills para agentes que despliegan [OSCompliance ENS](https://github.com/arseniteio/oscompliance-ens) y [Power ENS](https://github.com/arseniteio/power-ens) sobre Wazuh y llevan las máquinas Linux al cumplimiento del ENS solo mediante configuración. Funcionan con Claude Code y OpenCode.
+Skills para agentes que despliegan [OSCompliance ENS](https://github.com/arseniteio/oscompliance-ens-wazuh) y [Power ENS](https://github.com/arseniteio/power-ens-wazuh) sobre Wazuh y llevan las máquinas Linux al cumplimiento del ENS solo mediante configuración. Funcionan con Claude Code y OpenCode.
 
 ## Cómo funciona
 

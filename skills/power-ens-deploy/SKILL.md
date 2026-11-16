@@ -16,7 +16,7 @@ You work in five steps: ask, discover, plan, install, verify. You never skip the
 1. Ask before you assume. The ENS category, the machines to audit, the control parameters and the restart window belong to the organisation. Never invent them.
 2. Never type, print, log, commit or ask for a password in the conversation, and never put one on a command line. The operator types it at the installer prompt in an interactive terminal, or exports it in the session where the installer runs. You check that a variable is set without showing it. Never copy SSH keys or client data anywhere.
 3. Run one installer command per host, as written in this skill. Never replay the installer's steps by hand.
-4. After every host, run its check. If it fails, read the troubleshooting section of `docs/en/operations.md` in the oscompliance-ens repository, fix only what it describes and run the same command again. If it still fails, stop and report the command, its output and what you tried.
+4. After every host, run its check. If it fails, read the troubleshooting section of `docs/en/operations.md` in the oscompliance-ens-wazuh repository, fix only what it describes and run the same command again. If it still fails, stop and report the command, its output and what you tried.
 5. Never patch the scripts or binaries of the repositories. If something does not fit, stop and explain what you would change and why.
 6. Ask before anything that cannot be undone or that interrupts service: deleting indices, users or groups, and running the installer on a manager or dashboard outside the restart window. The installer restarts `wazuh-manager` on managers and `wazuh-dashboard` on dashboards.
 7. Keep a record of every host, command, check and result. It becomes the report.
@@ -31,7 +31,7 @@ Ask these questions in one message and wait for the answers:
 4. The ENS category, BAJO, MEDIO or ALTO, and the client name shown in Power ENS. A wrong category gives wrong verdicts without any error.
 5. The dashboard users who will change the ENS configuration, besides those with `all_access`.
 6. When the managers and dashboards may restart.
-7. The release to install. Default: the latest release of `arseniteio/oscompliance-ens`, pinned for the whole run.
+7. The release to install. Default: the latest release of `arseniteio/oscompliance-ens-wazuh`, pinned for the whole run.
 
 If sudo needs a password on a host, do not type it. Ask the operator to run the command on that host.
 
@@ -42,14 +42,14 @@ Find the role of every Wazuh host over SSH, as described in [distributed.md](dis
 Decide the deployment type:
 
 - Package install, one host or several: the installer handles it. One host with manager, indexer and dashboard is a single master node.
-- Docker: the official single-node Wazuh compose file. The installer does not detect nodes inside containers. Follow `docs/en/install-docker.md` of oscompliance-ens instead of step 4.
+- Docker: the official single-node Wazuh compose file. The installer does not detect nodes inside containers. Follow `docs/en/install-docker.md` of oscompliance-ens-wazuh instead of step 4.
 
 Stop and ask if the Wazuh version is outside 4.14.7 to 4.14.9, or if the dashboard is not 2.19.5 on Wazuh 4.14.7 or 2.19.6 on 4.14.8 and 4.14.9.
 
 Resolve the release once and pin it for every host, so that all of them get the same version:
 
 ```bash
-curl -fsSLI -o /dev/null -w '%{url_effective}\n' https://github.com/arseniteio/oscompliance-ens/releases/latest
+curl -fsSLI -o /dev/null -w '%{url_effective}\n' https://github.com/arseniteio/oscompliance-ens-wazuh/releases/latest
 ```
 
 On each machine to audit, check that `wazuh-agent`, `auditd` and `cron` (`crond` on RHEL) are active and that the authentication log reaches Wazuh, as in "Before you start" of `docs/en/install.md`. The installer only warns when `auditd` or `cron` is missing.
@@ -78,14 +78,14 @@ The installer asks for up to four passwords on the master. The operator finds th
 A non-interactive SSH session has no terminal for the prompts and does not carry your environment, so you do not run this command on a remote master. Give the operator the command and ask them to run it in their own terminal on the master, for example after `ssh -t wazuh-mgr-01`:
 
 ```bash
-curl -fsSL https://github.com/arseniteio/oscompliance-ens/releases/download/v1.2.0/install.sh \
+curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh \
   | sudo OSC_RELEASE=1.2.0 bash -s -- server
 ```
 
 If your shell runs on the master itself and the operator exported the variables there, run it yourself and keep them through sudo:
 
 ```bash
-curl -fsSL https://github.com/arseniteio/oscompliance-ens/releases/download/v1.2.0/install.sh \
+curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh \
   | sudo --preserve-env=API_ADMIN_PASSWORD,OSC_INDEXER_PASSWORD,OSC_WAZUH_API_PASSWORD,INDEXER_ADMIN_PASSWORD \
     OSC_RELEASE=1.2.0 bash -s -- server
 ```
@@ -101,7 +101,7 @@ Ask the operator for the installer output and check that it ends with `Done on t
 These need no password. Run the same command on each one over SSH, in the order of the plan:
 
 ```bash
-ssh wazuh-worker-01 'curl -fsSL https://github.com/arseniteio/oscompliance-ens/releases/download/v1.2.0/install.sh | sudo OSC_RELEASE=1.2.0 bash -s -- server'
+ssh wazuh-worker-01 'curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh | sudo OSC_RELEASE=1.2.0 bash -s -- server'
 ```
 
 A worker waits up to 15 minutes for the rules of the release, which the cluster syncs from the master, and then restarts its manager. If they do not arrive it stops with `the rules of release 1.2.0 have not arrived from the master`: check the master and `cluster_control -l`, and run it again.
@@ -112,20 +112,20 @@ For a layout the detection does not fit, `--only` replaces it with a comma-separ
 
 ### Without curl | bash
 
-If the operator does not allow `curl | bash`, or a host has no Internet access, use the release tarball: download `oscompliance-ens-1.2.0-linux-<arch>.tar.gz` and `SHA256SUMS`, run `sha256sum -c --ignore-missing SHA256SUMS`, extract it and run `sudo ./install.sh server` from the extracted folder. On a dashboard, put the plugin zip and `deploy-plugin.sh` of the power-ens release in the same folder; the installer uses them instead of downloading.
+If the operator does not allow `curl | bash`, or a host has no Internet access, use the release tarball: download `oscompliance-ens-wazuh-1.2.0-linux-<arch>.tar.gz` and `SHA256SUMS`, run `sha256sum -c --ignore-missing SHA256SUMS`, extract it and run `sudo ./install.sh server` from the extracted folder. On a dashboard, put the plugin zip and `deploy-plugin.sh` of the power-ens-wazuh release in the same folder; the installer uses them instead of downloading.
 
 ### Configuration
 
 The engine judges with level MEDIO and scope group `ens` until a configuration is saved in Power ENS. If the category from step 1 is not MEDIO, or to set the client name, save it in Power ENS, Configuración, Organización, with an `all_access` user: with a browser tool, or by asking the operator. The power-ens-compliance skill covers later changes.
 
-To allow the configuration users of step 1, run `create-admin-role.sh --map <user>` from the power-ens release on a host with the indexer admin certificates.
+To allow the configuration users of step 1, run `create-admin-role.sh --map <user>` from the power-ens-wazuh release on a host with the indexer admin certificates.
 
 ### Audited machines
 
 Run on each machine:
 
 ```bash
-curl -fsSL https://github.com/arseniteio/oscompliance-ens/releases/download/v1.2.0/install.sh \
+curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh \
   | sudo OSC_RELEASE=1.2.0 bash -s -- agent --group ens
 ```
 

@@ -34,8 +34,8 @@ Everything else is outside your scope unless the operator asks for that exact ch
 Clone the documentation and read `docs/en/verdicts.md` and `docs/en/configuration.md`:
 
 ```bash
-git clone https://github.com/arseniteio/oscompliance-ens.git
-git clone https://github.com/arseniteio/power-ens.git
+git clone https://github.com/arseniteio/oscompliance-ens-wazuh.git
+git clone https://github.com/arseniteio/power-ens-wazuh.git
 ```
 
 Ask the operator, in one message: the dashboard URL, which controls or machines to work on (all by default), and who in the organisation confirms values and exclusions.
@@ -64,7 +64,7 @@ The same data is in the index `oscompliance-verdicts`: documents with `scope` (`
 
 ## 2. Classify
 
-For each failing evidence, read its control page in `oscompliance-ens/docs/en/controls/` and classify it:
+For each failing evidence, read its control page in `oscompliance-ens-wazuh/docs/en/controls/` and classify it:
 
 - `NOT_EVALUABLE` by `CONFIGURATION`: a parameter is missing. Ask the organisation for its value, quoting what the control page says it means.
 - `NOT_EVALUABLE` by `COLLECTION`: a source did not arrive, such as the authentication log, auditd or an agent pass. Follow `docs/en/operations.md`. A fix on the machine needs the operator's approval.
