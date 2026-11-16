@@ -1,11 +1,11 @@
 ---
 name: power-ens-compliance
-description: Read Power ENS verdicts and bring Linux machines to ENS compliance through configuration only, by declaring control parameters and excluding machines from controls with a recorded reason. Use when asked to configure Power ENS, declare ENS parameters, explain why a control fails, exclude a machine from a control, or raise ENS compliance.
+description: Read Power ENS verdicts and bring Linux machines to ENS compliance through configuration only, by declaring control parameters and excluding machines from controls with a recorded reason. Use when asked to configure Power ENS, change the ENS level, client name or scope, declare ENS parameters, explain why a control fails, exclude a machine from a control, or raise ENS compliance.
 ---
 
 # Reach ENS compliance through configuration
 
-Power ENS shows one verdict per ENS control, requirement, evidence and machine. You read the verdicts and change the configuration so that it states what the organisation really does. Your aim is a true configuration, not a green screen. A verdict that fails because the system fails is correct, and you report it.
+Power ENS shows one verdict per ENS control, requirement, evidence and machine. You read the verdicts and change the configuration so that it states what the organisation does. Your aim is a true configuration, not a green screen. A verdict that fails because the system fails is correct, and you report it.
 
 This skill assumes Power ENS is installed. If it is not, use the power-ens-deploy skill first.
 
@@ -21,6 +21,7 @@ This skill assumes Power ENS is installed. If it is not, use the power-ens-deplo
 
 ## What you may change
 
+- The organisation settings: ENS level, client name and the Wazuh groups in scope, as in "Organisation settings" below.
 - The Power ENS configuration: control parameters, templates and the system type of each machine, in the dashboard or with `set-parameters.py`.
 - Per-control exclusions, `ens-excluir-<control>`, always with a reason.
 - `/etc/oscompliance/agent.json` on a machine whose files are in non-standard paths. It holds paths only.
@@ -38,6 +39,17 @@ git clone https://github.com/arseniteio/power-ens.git
 ```
 
 Ask the operator, in one message: the dashboard URL, which controls or machines to work on (all by default), and who in the organisation confirms values and exclusions.
+
+## Organisation settings
+
+Until a configuration is saved, the engine judges with level MEDIO, no client name, and only the machines in the Wazuh group `ens`. Check these settings first: a wrong level or scope makes every other verdict wrong.
+
+In Power ENS, Configuración, Organización, with a user that has `power_ens_admin` or `all_access`:
+
+- Cliente and Nivel ENS, then Guardar configuración global. The level is the ENS category of the system as the organisation declared it, BAJO, MEDIO or ALTO. Ask for it; never infer it from the verdicts.
+- Grupos evaluables, then Guardar grupos. Only machines in these Wazuh groups are judged; the rest show as out of the ENS group. A machine joins a group when its agent is installed with `install.sh agent --group <group>`, and the engine assigns it within 15 minutes.
+
+Record each change as in rule 7.
 
 ## 1. Read the verdicts
 
