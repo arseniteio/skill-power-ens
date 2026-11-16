@@ -4,11 +4,11 @@ Agent skills that deploy [OSCompliance ENS](https://github.com/arseniteio/oscomp
 
 ## How it works
 
-Ask your agent to deploy Power ENS. It asks what it needs first: the task, the Wazuh hosts and how to reach them, the machines to audit, the ENS category and the restart window. It then detects the Wazuh layout and versions on each host, shows a plan and waits for your go. It installs from the published release, checks every step and ends with a report.
+Ask your agent to deploy Power ENS. It asks what it needs first: the task, the Wazuh hosts and how to reach them, the machines to audit, the ENS category and the restart window. It then finds the role and version of each Wazuh host over SSH, shows a plan and waits for your go. It runs the release installer once per host, in order: the master manager, the workers, the dashboards, then the audited machines. It checks every host and ends with a report.
 
 Then ask it to raise compliance. It reads the verdicts, separates real system faults from missing or wrong configuration, and proposes parameter values or exclusions with a reason. It applies only what you confirm, and records why for every change. It never patches scripts or systems without your permission, and never changes a value only to turn a verdict green.
 
-Passwords stay in your shell. Export them before you start; the agent never asks for them in the conversation.
+Passwords never go through the agent. The installer asks for them on the master manager: type them in your own terminal when the agent hands you the command, or export them in that session first. The agent never asks for them in the conversation.
 
 ## Installation
 

@@ -4,11 +4,11 @@ Skills para agentes que despliegan [OSCompliance ENS](https://github.com/arsenit
 
 ## Cómo funciona
 
-Pide a tu agente que despliegue Power ENS. Primero pregunta lo que necesita: la tarea, los hosts de Wazuh y cómo llegar a ellos, las máquinas que se auditan, la categoría ENS y la ventana de reinicio. Después detecta la topología y las versiones de Wazuh en cada host, presenta un plan y espera tu confirmación. Instala desde la release publicada, comprueba cada paso y termina con un informe.
+Pide a tu agente que despliegue Power ENS. Primero pregunta lo que necesita: la tarea, los hosts de Wazuh y cómo llegar a ellos, las máquinas que se auditan, la categoría ENS y la ventana de reinicio. Después identifica por SSH el rol y la versión de cada host de Wazuh, presenta un plan y espera tu confirmación. Ejecuta el instalador de la release una vez por host, en orden: el manager maestro, los workers, los dashboards y, por último, las máquinas auditadas. Comprueba cada host y termina con un informe.
 
 Después pídele que suba el cumplimiento. Lee los veredictos, separa los fallos reales del sistema de la configuración que falta o es incorrecta, y propone valores de parámetros o exclusiones con motivo. Solo aplica lo que confirmas y registra el porqué de cada cambio. Nunca modifica scripts ni sistemas sin tu permiso, y nunca cambia un valor solo para poner un veredicto en verde.
 
-Las contraseñas se quedan en tu shell. Expórtalas antes de empezar; el agente nunca las pide en la conversación.
+Las contraseñas nunca pasan por el agente. El instalador las pide en el manager maestro: escríbelas en tu propio terminal cuando el agente te dé el comando, o expórtalas antes en esa sesión. El agente nunca las pide en la conversación.
 
 ## Instalación
 
