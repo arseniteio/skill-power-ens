@@ -1,6 +1,6 @@
 ---
 name: power-ens-compliance
-description: Read Power ENS verdicts and bring Linux machines to ENS compliance through configuration only, by declaring control parameters and excluding machines from controls with a recorded reason. Use when asked to configure Power ENS, change the ENS level, client name or scope, declare ENS parameters, explain why a control fails, exclude a machine from a control, or raise ENS compliance.
+description: Read Power ENS verdicts and bring Linux and Windows machines to ENS compliance through configuration only, by declaring control parameters and excluding machines from controls with a recorded reason. Use when asked to configure Power ENS, change the ENS level, client name or scope, declare ENS parameters, explain why a control fails, exclude a machine from a control, or raise ENS compliance, or record the ENS maturity of a measure.
 ---
 
 # Reach ENS compliance through configuration
@@ -17,12 +17,14 @@ This skill assumes Power ENS is installed. If it is not, use the power-ens-deplo
 4. Never write an attestation (P-ATT) without a real document. Its reference, link, date and responsible person come from the organisation.
 5. Never exclude a machine from a control without a reason the operator gave or approved.
 6. Never print or ask for a password in the conversation. The operator exports a dashboard user as `DASH_USER=user:password` in the shell you use.
-7. Record every change: control, parameter or exclusion, level, value before and after, reason, who approved it and the date.
+7. Never assess a maturity level (Valorar) without the documents that prove it. L3 to L5 need a written, measured and improved process, and the organisation names the documents.
+8. Record every change: control, parameter or exclusion, level, value before and after, reason, who approved it and the date.
 
 ## What you may change
 
 - The organisation settings: ENS level, client name and the Wazuh groups in scope, as in "Organisation settings" below.
-- The Power ENS configuration: control parameters, templates and the system type of each machine, in the dashboard or with `set-parameters.py`.
+- The Power ENS configuration: control parameters, groups of machines, templates and the system type of each machine, in the dashboard, with `set-parameters.py` or with `oscompliance-policy`.
+- Maturity assessments of a measure, with the documents the organisation provides.
 - Per-control exclusions, `ens-excluir-<control>`, always with a reason.
 - `/etc/oscompliance/agent.json` on a machine whose files are in non-standard paths. It holds paths only.
 - The `agent.conf` of a Wazuh group outside the `oscompliance begin` and `oscompliance end` markers, for example to send an authentication log to Wazuh, with the operator's approval and a dated copy first. The engine owns everything between the markers; never edit it.
@@ -44,12 +46,12 @@ Ask the operator, in one message: the dashboard URL, which controls or machines 
 
 Until a configuration is saved, the engine judges with level MEDIO, no client name, and only the machines in the Wazuh group `ens`. Check these settings first: a wrong level or scope makes every other verdict wrong.
 
-In Power ENS, Configuración, Organización, with a user that has `power_ens_admin` or `all_access`:
+In Power ENS, Configuración, General, with a user that has `power_ens_admin` or `all_access`:
 
 - Cliente and Nivel ENS, then Guardar configuración global. The level is the ENS category of the system as the organisation declared it, BAJO, MEDIO or ALTO. Ask for it; never infer it from the verdicts.
 - Grupos evaluables, then Guardar grupos. Only machines in these Wazuh groups are judged; the rest show as out of the ENS group. A machine joins a group when its agent is installed with `install.sh agent --group <group>`, and the engine assigns it within 15 minutes.
 
-Record each change as in rule 7.
+Record each change as in rule 8.
 
 ## 1. Read the verdicts
 
@@ -82,13 +84,13 @@ Show the operator the list of proposals, grouped by case, before you change anyt
 Each parameter has a class, listed on its control page:
 
 - `organisation`: only the common value of the control counts. Per-machine values are ignored.
-- `system` and `platform`: the machine's own value wins over its template, and the template wins over the common value.
+- `system` and `platform`: a machine takes the first of its own value, the template assigned to it in the control, its groups, the template of its system type, and the common value. Lists add up across groups.
 
-Put each value at the narrowest level that matches the fact: the machine in Agentes when it is true of one machine, a template in Plantillas when it is true of a kind of machine, the common value when it is true of the whole organisation. A value for one machine never goes to a template or the common value.
+Put each value at the narrowest level that matches the fact: the machine when it is true of one machine, a group when it is true of a kind of machine, the common value when it is true of the whole organisation. A value for one machine never goes to a group or the common value.
 
 ## 4. Apply parameters
 
-In the dashboard, use Configuración, Plantillas or Agentes. From a file, use `power-ens/config/set-parameters.py` as described in "Parameters from a file" of `docs/en/configuration.md`:
+In the dashboard, use Configuración, Grupos y máquinas for groups and machines, and Organización for the common values. Groups can also be written in YAML and applied with `oscompliance-policy`, as described in "Profiles" of `docs/en/configuration.md`. From a file, use `power-ens/config/set-parameters.py` as described in "Parameters from a file" of `docs/en/configuration.md`:
 
 ```bash
 export OS_CERT=/etc/wazuh-indexer/certs/admin.pem OS_KEY=/etc/wazuh-indexer/certs/admin-key.pem
@@ -100,7 +102,7 @@ Run `--apply` only when the dry run shows no `ERROR` and only the changes you in
 
 ## 5. Apply exclusions
 
-The option Grupos por control in Organización must be on; the engine then creates one Wazuh group per control. The manager (agent 000) belongs to no group and cannot be excluded.
+The option Grupos por control in General must be on; the engine then creates one Wazuh group per control. The manager (agent 000) belongs to no group and cannot be excluded.
 
 With a browser, open Detalle del control on the machine, press Excluir de este control, write the reason and confirm. Power ENS moves the machine to the group and records agent, control, action, reason, user and date in the index `wazuh-ens-exclusions`. Volver a incluir reverses it, also with a reason.
 
@@ -123,6 +125,6 @@ Wait for the next engine pass, about 15 minutes, and read the verdicts again. Ea
 
 Report in this order:
 
-1. The changes and exclusions you made, from the record of rule 7.
+1. The changes, exclusions and maturity assessments you made, from the record of rule 8.
 2. The verdicts that still fail, grouped: system faults to fix, parameters the organisation must still declare, collection faults, cases for manual review.
 3. What you could not do, and why.
