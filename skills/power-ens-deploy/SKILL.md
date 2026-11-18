@@ -1,11 +1,11 @@
 ---
 name: power-ens-deploy
-description: Install, upgrade or uninstall OSCompliance ENS and the Power ENS plugin on Wazuh 4.14.7 to 4.14.9, all-in-one, Docker or distributed, and add Linux machines to the audit. Use when asked to deploy, install, upgrade or remove Power ENS or OSCompliance ENS, or to measure the ENS with Wazuh.
+description: Install, upgrade or uninstall OSCompliance ENS and the Power ENS plugin on Wazuh 4.14.7 to 4.14.9, all-in-one, Docker or distributed, and add Linux and Windows machines to the audit. Use when asked to deploy, install, upgrade or remove Power ENS or OSCompliance ENS, or to measure the ENS with Wazuh.
 ---
 
 # Deploy Power ENS
 
-You install OSCompliance ENS and Power ENS on an existing Wazuh deployment. The installer does the work: `install.sh server` detects what each Wazuh node is and installs only its part, and `install.sh agent` adds a Linux machine to the audit. You orchestrate: you ask, find the role of each host, plan the order, run one command per host and verify.
+You install OSCompliance ENS and Power ENS on an existing Wazuh deployment. The installer does the work: `install.sh server` detects what each Wazuh node is and installs only its part, `install.sh agent` adds a Linux machine to the audit, and `install.ps1` adds a Windows machine. You orchestrate: you ask, find the role of each host, plan the order, run one command per host and verify.
 
 The engine runs on the master manager and writes a verdict per ENS control and machine every 15 minutes. Power ENS shows them in the Wazuh dashboard.
 
@@ -62,7 +62,7 @@ The order is fixed: the master first, then the workers one at a time, then the d
 
 ## 4. Install
 
-Every command pins the release with `OSC_RELEASE`. The examples use 1.2.0.
+Every command pins the release with `OSC_RELEASE`. The examples use 2.0.0.
 
 ### Master manager
 
@@ -78,16 +78,16 @@ The installer asks for up to four passwords on the master. The operator finds th
 A non-interactive SSH session has no terminal for the prompts and does not carry your environment, so you do not run this command on a remote master. Give the operator the command and ask them to run it in their own terminal on the master, for example after `ssh -t wazuh-mgr-01`:
 
 ```bash
-curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh \
-  | sudo OSC_RELEASE=1.2.0 bash -s -- server
+curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v2.0.0/install.sh \
+  | sudo OSC_RELEASE=2.0.0 bash -s -- server
 ```
 
 If your shell runs on the master itself and the operator exported the variables there, run it yourself and keep them through sudo:
 
 ```bash
-curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh \
+curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v2.0.0/install.sh \
   | sudo --preserve-env=API_ADMIN_PASSWORD,OSC_INDEXER_PASSWORD,OSC_WAZUH_API_PASSWORD,INDEXER_ADMIN_PASSWORD \
-    OSC_RELEASE=1.2.0 bash -s -- server
+    OSC_RELEASE=2.0.0 bash -s -- server
 ```
 
 Without a terminal and without the variables, the installer stops with `no terminal to ask for it`.
@@ -101,10 +101,10 @@ Ask the operator for the installer output and check that it ends with `Done on t
 These need no password. Run the same command on each one over SSH, in the order of the plan:
 
 ```bash
-ssh wazuh-worker-01 'curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh | sudo OSC_RELEASE=1.2.0 bash -s -- server'
+ssh wazuh-worker-01 'curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v2.0.0/install.sh | sudo OSC_RELEASE=2.0.0 bash -s -- server'
 ```
 
-A worker waits up to 15 minutes for the rules of the release, which the cluster syncs from the master, and then restarts its manager. If they do not arrive it stops with `the rules of release 1.2.0 have not arrived from the master`: check the master and `cluster_control -l`, and run it again.
+A worker waits up to 15 minutes for the rules of the release, which the cluster syncs from the master, and then restarts its manager. If they do not arrive it stops with `the rules of release 2.0.0 have not arrived from the master`: check the master and `cluster_control -l`, and run it again.
 
 Do not run it on indexer-only nodes. It only answers `indexer nodes need nothing`.
 
@@ -112,11 +112,11 @@ For a layout the detection does not fit, `--only` replaces it with a comma-separ
 
 ### Without curl | bash
 
-If the operator does not allow `curl | bash`, or a host has no Internet access, use the release tarball: download `oscompliance-ens-wazuh-1.2.0-linux-<arch>.tar.gz` and `SHA256SUMS`, run `sha256sum -c --ignore-missing SHA256SUMS`, extract it and run `sudo ./install.sh server` from the extracted folder. On a dashboard, put the plugin zip and `deploy-plugin.sh` of the power-ens-wazuh release in the same folder; the installer uses them instead of downloading.
+If the operator does not allow `curl | bash`, or a host has no Internet access, use the release tarball: download `oscompliance-ens-wazuh-2.0.0-linux-<arch>.tar.gz` and `SHA256SUMS`, run `sha256sum -c --ignore-missing SHA256SUMS`, extract it and run `sudo ./install.sh server` from the extracted folder. On a dashboard, put the plugin zip and `deploy-plugin.sh` of the power-ens-wazuh release in the same folder; the installer uses them instead of downloading.
 
 ### Configuration
 
-The engine judges with level MEDIO and scope group `ens` until a configuration is saved in Power ENS. If the category from step 1 is not MEDIO, or to set the client name, save it in Power ENS, Configuración, Organización, with an `all_access` user: with a browser tool, or by asking the operator. The power-ens-compliance skill covers later changes.
+The engine judges with level MEDIO and scope group `ens` until a configuration is saved in Power ENS. If the category from step 1 is not MEDIO, or to set the client name, save it in Power ENS, Configuración, General, with an `all_access` user: with a browser tool, or by asking the operator. The power-ens-compliance skill covers later changes.
 
 To allow the configuration users of step 1, run `create-admin-role.sh --map <user>` from the power-ens-wazuh release on a host with the indexer admin certificates.
 
@@ -125,19 +125,27 @@ To allow the configuration users of step 1, run `create-admin-role.sh --map <use
 Run on each machine:
 
 ```bash
-curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v1.2.0/install.sh \
-  | sudo OSC_RELEASE=1.2.0 bash -s -- agent --group ens
+curl -fsSL https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v2.0.0/install.sh \
+  | sudo OSC_RELEASE=2.0.0 bash -s -- agent --group ens
 ```
 
 The engine adds the machine to the `ens` group within 15 minutes, and the group configuration follows. You do not run `agent_groups` on the manager. With a fleet tool, the operator runs the same command on every machine.
 
 Install one machine first and verify it. Then go on in batches, and stop a batch when a machine fails for a reason you do not understand.
 
+### Windows machines
+
+The Windows agent has been tested in the lab only, not on a physical machine. Tell the operator before installing it, and start with a test machine. Requirements and checks are in `docs/en/install-windows.md` of oscompliance-ens-wazuh. Give the operator this command for an elevated PowerShell on each machine, or for their fleet tool:
+
+```powershell
+[Net.ServicePointManager]::SecurityProtocol = 'Tls12'; & ([scriptblock]::Create((irm https://github.com/arseniteio/oscompliance-ens-wazuh/releases/download/v2.0.0/install.ps1))) -Group ens -Release 2.0.0
+```
+
 An application server, such as a mail or database server, needs nothing special. What differs is configuration, handled by the power-ens-compliance skill.
 
 ### Upgrade
 
-Run the same command on each node with the new release, in the same order: the master first. Then the audited machines.
+Run the same command on each node with the new release, in the same order: the master first. Then the audited machines. From 1.2.0, the first pass of the new agent unloads the old read watches on machines of a group with the engine's block; on any other machine the operator runs `auditctl -D -k oscompliance_read` and `auditctl -D -k oscompliance_exec` once.
 
 ### Uninstall
 
