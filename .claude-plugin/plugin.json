@@ -3,7 +3,7 @@
   "description": "Deploy OSCompliance ENS and Power ENS on Wazuh and bring Linux machines to ENS compliance through configuration only.",
   "version": "2.0.0",
   "author": {
-    "name": "arseniteio"
+    "name": "Quer System Informática"
   },
   "homepage": "https://github.com/arseniteio/skill-power-ens",
   "repository": "https://github.com/arseniteio/skill-power-ens",
